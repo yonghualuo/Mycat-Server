@@ -104,6 +104,7 @@
 		 -->
 	</user>
 
+	<!-- 监控mycate状态 -->
 	<user name="user">
 		<property name="password">user</property>
 		<property name="schemas">TESTDB</property>

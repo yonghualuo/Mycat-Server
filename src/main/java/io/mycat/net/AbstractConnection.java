@@ -272,7 +272,7 @@ public abstract class AbstractConnection implements NIOConnection {
 
 	@Override
 	public void register() throws IOException {
-
+		LOGGER.info("=====register===");
 	}
 
 	public void asynRead() throws IOException {

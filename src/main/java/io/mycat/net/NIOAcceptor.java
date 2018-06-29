@@ -99,6 +99,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor{
 					try {
 						for (SelectionKey key : keys) {
 							if (key.isValid() && key.isAcceptable()) {
+								// connect
 								accept();
 							} else {
 								key.cancel();
@@ -132,11 +133,14 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor{
 			FrontendConnection c = factory.make(channel);
 			c.setAccepted(true);
 			c.setId(ID_GENERATOR.getId());
+			// 轮询获取processor(BusinessExecutor)
 			NIOProcessor processor = (NIOProcessor) MycatServer.getInstance()
 					.nextProcessor();
 			c.setProcessor(processor);
-			
+
+			// 轮询获取nioreactor
 			NIOReactor reactor = reactorPool.getNextReactor();
+			// 插入到nioreactor中的连接队列, 并唤醒该线程(阻塞在select上)
 			reactor.postRegister(c);
 
 		} catch (Exception e) {
@@ -185,5 +189,7 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor{
 			}
 		}
 	}
+
+
 
 }

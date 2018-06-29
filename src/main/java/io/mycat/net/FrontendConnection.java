@@ -422,6 +422,7 @@ public abstract class FrontendConnection extends AbstractConnection {
 
 	@Override
 	public void register() throws IOException {
+		super.register();
 		if (!isClosed.get()) {
 
 			// 生成认证数据

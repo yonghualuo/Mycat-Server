@@ -184,6 +184,7 @@ public class NIOSocketWR extends SocketWR {
 	@Override
 	public void asynRead() throws IOException {
 		ByteBuffer theBuffer = con.readBuffer;
+		// 分配bytebuffer
 		if (theBuffer == null) {
 
 			theBuffer = con.processor.getBufferPool().allocate(con.processor.getBufferPool().getChunkSize());

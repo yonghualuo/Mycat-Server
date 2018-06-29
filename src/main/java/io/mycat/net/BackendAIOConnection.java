@@ -44,6 +44,7 @@ public abstract class BackendAIOConnection extends AbstractConnection implements
 	}
 
 	public void register() throws IOException {
+		super.register();
 		this.asynRead();
 	}
 

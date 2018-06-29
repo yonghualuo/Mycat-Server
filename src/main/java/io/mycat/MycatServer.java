@@ -329,7 +329,7 @@ public class MycatServer {
 		LOGGER.info(inf);
 		LOGGER.info("sysconfig params:" + system.toString());
 
-		// startup manager
+		// startup manager, wrap the channel to a connection and etc.
 		ManagerConnectionFactory mf = new ManagerConnectionFactory();
 		ServerConnectionFactory sf = new ServerConnectionFactory();
 		SocketAcceptor manager = null;
@@ -435,16 +435,23 @@ public class MycatServer {
 
 		} else {
 			LOGGER.info("using nio network handler ");
-			
+
+			// 初始化并启动pool的NIOReactor线程, 该线程阻塞在selector上
 			NIOReactorPool reactorPool = new NIOReactorPool(
 					DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOREACTOR",
 					processors.length);
+			// 启动线程, 并阻塞在selector上
 			connector = new NIOConnector(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + "NIOConnector", reactorPool);
 			((NIOConnector) connector).start();
 
+			/**
+			 * 管理端口
+			 * 监听端口, 注册连接事件, 并启动线程, 阻塞在selector上
+			 */
 			manager = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME
 					+ "Manager", system.getBindIp(), system.getManagerPort(), mf, reactorPool);
 
+			// 服务端口
 			server = new NIOAcceptor(DirectByteBufferPool.LOCAL_BUF_THREAD_PREX + NAME
 					+ "Server", system.getBindIp(), system.getServerPort(), sf, reactorPool);
 		}

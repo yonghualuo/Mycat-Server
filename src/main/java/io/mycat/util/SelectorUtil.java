@@ -35,6 +35,7 @@ public class SelectorUtil {
                 for (SelectionKey key: oldSelector.keys()) {
                     Object a = key.attachment();
                     try {
+                        // invalid, or registered with the newSelector
                         if (!key.isValid() || key.channel().keyFor(newSelector) != null) {
                             continue;
                         }

@@ -38,10 +38,12 @@ public abstract class FrontendConnectionFactory {
 			throws IOException;
 
 	public FrontendConnection make(NetworkChannel channel) throws IOException {
+		// 重用地址
 		channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
 
 		FrontendConnection c = getConnection(channel);
+		// reconfig socket option
 		MycatServer.getInstance().getConfig().setSocketParams(c, true);
 		return c;
 	}

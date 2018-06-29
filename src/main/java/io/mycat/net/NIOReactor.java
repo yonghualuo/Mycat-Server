@@ -93,6 +93,7 @@ public final class NIOReactor {
 					long start = System.nanoTime();
 					tSelector.select(500L);
 					long end = System.nanoTime();
+					// RW的registerQueue中的conn注册到tSelector
 					register(tSelector);
 					keys = tSelector.selectedKeys();
 					if (keys.size() == 0 && (end - start) < SelectorUtil.MIN_SELECT_TIME_IN_NANO_SECONDS )
@@ -145,6 +146,7 @@ public final class NIOReactor {
 							}
 						}
 					}
+					// select达到阈值, 重建selector
 					if (invalidSelectCount > SelectorUtil.REBUILD_COUNT_THRESHOLD)
 					{
 						final Selector rebuildSelector = SelectorUtil.rebuildSelector(this.selector);
@@ -177,6 +179,7 @@ public final class NIOReactor {
 			}
 			while ((c = registerQueue.poll()) != null) {
 				try {
+					// 注册OP_READ事件
 					((NIOSocketWR) c.getSocketWR()).register(selector);
 					c.register();
 				} catch (Exception e) {
