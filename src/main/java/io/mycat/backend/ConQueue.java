@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ConQueue {
+	/**
+	 * 按照连接是自动提交还是手动提交模式进行区分
+	 */
 	private final ConcurrentLinkedQueue<BackendConnection> autoCommitCons = new ConcurrentLinkedQueue<BackendConnection>();
 	private final ConcurrentLinkedQueue<BackendConnection> manCommitCons = new ConcurrentLinkedQueue<BackendConnection>();
 	private long executeCount;
@@ -12,6 +15,7 @@ public class ConQueue {
 		ConcurrentLinkedQueue<BackendConnection> f1 = autoCommitCons;
 		ConcurrentLinkedQueue<BackendConnection> f2 = manCommitCons;
 
+		// 手动提交时, 交换f1, f2
 		if (!autoCommit) {
 			f1 = manCommitCons;
 			f2 = autoCommitCons;

@@ -145,6 +145,11 @@ public class MySQLConnection extends BackendAIOConnection {
 	private volatile boolean metaDataSyned = true;
 	private volatile int xaStatus = 0;
 
+	/**
+	 *
+	 * @param channel
+	 * @param fromSlaveDB 是否只读
+	 */
 	public MySQLConnection(NetworkChannel channel, boolean fromSlaveDB) {
 		super(channel);
 		this.clientFlags = CLIENT_FLAGS;
@@ -396,6 +401,15 @@ public class MySQLConnection extends BackendAIOConnection {
 				autocommit);
 	}
 
+    /**
+     * 则判断获取到的连接是否符合要求，若不符合要求，先同步状态，然后执行具体的 SQL。
+     *
+     * @param xaTxID
+     * @param rrn
+     * @param clientCharSetIndex
+     * @param clientTxIsoLation
+     * @param clientAutoCommit
+     */
 	private void synAndDoExecute(String xaTxID, RouteResultsetNode rrn,
 			int clientCharSetIndex, int clientTxIsoLation,
 			boolean clientAutoCommit) {

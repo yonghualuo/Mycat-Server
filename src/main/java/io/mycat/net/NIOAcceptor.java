@@ -40,6 +40,8 @@ import io.mycat.MycatServer;
 import io.mycat.net.factory.FrontendConnectionFactory;
 
 /**
+ * 处理的是 Accept 事件，是服务端接收客户端连接事件，就是 MyCAT 作为服务端去处理前端
+ * 业务程序发过来的连接请求。
  * @author mycat
  */
 public final class NIOAcceptor extends Thread implements SocketAcceptor{
@@ -47,13 +49,26 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor{
 	private static final AcceptIdGenerator ID_GENERATOR = new AcceptIdGenerator();
 
 	private final int port;
+	// 事件选择器
 	private volatile Selector selector;
+	// 监听新进来的 TCP 连接的通道
 	private final ServerSocketChannel serverChannel;
 	private final FrontendConnectionFactory factory;
 	private long acceptCount;
+	// 当连接建立后，从 reactorPool 中分配一个 NIOReactor，处理 Read 和 Write 事件
 	private final NIOReactorPool reactorPool;
 
-	public NIOAcceptor(String name, String bindIp,int port, 
+	/**
+	 * 监听通道在 NIOAcceptor 构造函数里启动,然后注册到实际进行任务处理的 Dispather 线程的 Selector 中
+	 *
+	 * @param name
+	 * @param bindIp
+	 * @param port
+	 * @param factory
+	 * @param reactorPool
+	 * @throws IOException
+	 */
+	public NIOAcceptor(String name, String bindIp,int port,
 			FrontendConnectionFactory factory, NIOReactorPool reactorPool)
 			throws IOException {
 		super.setName(name);
@@ -79,6 +94,10 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor{
 		return acceptCount;
 	}
 
+	/**
+	 * selector 不断监听连接事件，然后在 accept()函数中对事件进行处理。
+	 *
+	 */
 	@Override
 	public void run() {
 		int invalidSelectCount = 0;
@@ -125,6 +144,11 @@ public final class NIOAcceptor extends Thread implements SocketAcceptor{
 		}
 	}
 
+	/**
+	 * 当连接建立完毕后，从
+	 * reactorPool 中获得一个 NIOReactor，然后把连接传递到 NIOReactor，然后后续的 Read 和 Write 事件就交给
+	 * NIOReactor 处理了。
+	 */
 	private void accept() {
 		SocketChannel channel = null;
 		try {

@@ -42,6 +42,11 @@ public final class AIOConnector implements SocketConnector,
 
 	}
 
+	/**
+	 * 连接成功后, 异步回调
+	 * @param result
+	 * @param attachment
+	 */
 	@Override
 	public void completed(Void result, BackendAIOConnection attachment) {
 		finishConnect(attachment);

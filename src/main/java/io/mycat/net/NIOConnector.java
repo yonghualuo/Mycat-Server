@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import io.mycat.util.SelectorUtil;
 
 /**
+ * MyCAT 作为客户端去主动连接 MySQL Server
+ *
  * @author mycat
  */
 public final class NIOConnector extends Thread implements SocketConnector {
@@ -48,9 +50,12 @@ public final class NIOConnector extends Thread implements SocketConnector {
 	public static final ConnectIdGenerator ID_GENERATOR = new ConnectIdGenerator();
 
 	private final String name;
+	// 事件选择器
 	private volatile Selector selector;
+	// 需要建立连接的对象，临时放在这个队列里
 	private final BlockingQueue<AbstractConnection> connectQueue;
 	private long connectCount;
+	// 当连接建立后，从 reactorPool 中分配一个 NIOReactor，处理 Read 和 Write 事件
 	private final NIOReactorPool reactorPool;
 
 	public NIOConnector(String name, NIOReactorPool reactorPool)
@@ -66,6 +71,11 @@ public final class NIOConnector extends Thread implements SocketConnector {
 		return connectCount;
 	}
 
+    /**
+     * 作用: 把需要建立的连接放到 connectQueue 队列中，然后再唤醒 selector。
+     * 触发: 在新建连接或者心跳时被 XXXXConnectionFactory 触发的
+     * @param c
+     */
 	public void postConnect(AbstractConnection c) {
 		connectQueue.offer(c);
 		selector.wakeup();
@@ -122,6 +132,15 @@ public final class NIOConnector extends Thread implements SocketConnector {
 		}
 	}
 
+    /**
+     * connect 函数的目的就是处理 postConnect 函数操作的 connectQueue 队列：
+     * 1. 判断 connectQueue 中是否新的连接请求
+     * 2. 建立一个 SocketChannel
+     * 3. 在 selector 中进行注册 OP_CONNECT
+     * 4. 发起 SocketChannel.connect()操作
+     *
+     * @param selector
+     */
 	private void connect(Selector selector) {
 		AbstractConnection c = null;
 		while ((c = connectQueue.poll()) != null) {
@@ -137,6 +156,13 @@ public final class NIOConnector extends Thread implements SocketConnector {
 		}
 	}
 
+    /**
+     * 当连接建立完毕后，从 reactorPool 中获得一个 NIOReactor，然后把连
+     * 接传递到 NIOReactor，然后后续的 Read 和 Write 事件就交给 NIOReactor 处理了。
+     *
+     * @param key
+     * @param att
+     */
 	private void finishConnect(SelectionKey key, Object att) {
 		BackendAIOConnection c = (BackendAIOConnection) att;
 		try {

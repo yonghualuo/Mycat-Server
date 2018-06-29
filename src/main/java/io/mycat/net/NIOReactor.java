@@ -59,6 +59,15 @@ public final class NIOReactor {
 		new Thread(reactorR, name + "-RW").start();
 	}
 
+    /**
+     * 把 AbstractConnection 对象加入缓冲队列,然后 wakeup selector 等待注册
+     *
+     * 直接注册不可吗? 不是不可以,是效率问题，至少加两次锁,锁竞争激烈
+     * - Channel 本身的 regLock,竞争几乎没有
+     * - Selector 内部的 key 集合,竞争激烈
+     * 更好的方式就是采用上面这种方式，先放入缓冲队列，等待 selector 单线程进行注册。
+     * @param c
+     */
 	final void postRegister(AbstractConnection c) {
 		reactorR.registerQueue.offer(c);
 		reactorR.selector.wakeup();
@@ -73,6 +82,7 @@ public final class NIOReactor {
 	}
 
 	private final class RW implements Runnable {
+	    // 是一个 dispatcher，用来负责多个链路事件的事件分发
 		private volatile Selector selector;
 		private final ConcurrentLinkedQueue<AbstractConnection> registerQueue;
 		private long reactCount;
@@ -82,6 +92,18 @@ public final class NIOReactor {
 			this.registerQueue = new ConcurrentLinkedQueue<AbstractConnection>();
 		}
 
+
+        /**
+         * 1. 注册 OP_READ 事件
+         * OP_WRITE 事件的注册放在 NIOSocketWR.doNextWriteCheck()函数中，doNextWriteCheck 既被
+         * selector 线程调用，也会被其它的业务线程调用，此时就会存在 lock 竞争的问题，所以对于 OP_WRITE 事件也
+         * 建议用队列缓存的方式，不过对于 MyCAT 的流量场景，大部分写操作是由业务线程直接写入，只有在网络繁忙
+         * 时，业务线程不能一次全部写完，才会通过 OP_WRITE 注册方式进行候补写。
+         * 2. selector 监听事件，如果是读事件，就调用 con.asynRead()函数，进行字节的读取。对于 asynRead 中如
+         * 何提取 MySQL 协议包，就属于网络框架讨论的内容，
+         * 3. selector 监听到写事件，调用 AbstractConnection.doNextWriteCheck()进行写事件的处理，在
+         * AbstractConnection.doNextWriteCheck()中，又调用 NIOSocketWR.doNextWriteCheck()进行处理的
+         */
 		@Override
 		public void run() {
 			int invalidSelectCount = 0;

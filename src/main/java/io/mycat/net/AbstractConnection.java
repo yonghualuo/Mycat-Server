@@ -446,7 +446,7 @@ public abstract class AbstractConnection implements NIOConnection {
 			writeQueue.offer(buffer);
 		}
 
-		// if ansyn write finishe event got lock before me ,then writing
+		// if ansyn write finish event got lock before me ,then writing
 		// flag is set false but not start a write request
 		// so we check again
 		try {

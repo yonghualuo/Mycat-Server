@@ -457,11 +457,19 @@ public abstract class PhysicalDatasource {
 		ConQueue queue = conMap.getSchemaConQueue(schema);
 		queue.incExecuteCount();
 		conn.setAttachment(attachment);
-		conn.setLastTime(System.currentTimeMillis()); // 每次取连接的时候，更新下lasttime，防止在前端连接检查的时候，关闭连接，导致sql执行失败
+		// 每次取连接的时候，更新下lasttime，防止在前端连接检查的时候，关闭连接，导致sql执行失败
+		conn.setLastTime(System.currentTimeMillis());
 		handler.connectionAcquired(conn);
 		return conn;
 	}
 
+    /**
+     * 在businessExecutor中添加一个任务【创建新连接】
+     * @param handler
+     * @param attachment
+     * @param schema
+     * @throws IOException
+     */
 	private void createNewConnection(final ResponseHandler handler,
 			final Object attachment, final String schema) throws IOException {		
 		// aysn create connection

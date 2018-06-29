@@ -91,6 +91,7 @@ public class ConMap {
 		int total = 0;
 		for (NIOProcessor processor : MycatServer.getInstance().getProcessors()) {
 			for (BackendConnection con : processor.getBackends().values()) {
+				// MySQL Native 连接对象
 				if (con instanceof MySQLConnection) {
 					MySQLConnection mysqlCon = (MySQLConnection) con;
 
