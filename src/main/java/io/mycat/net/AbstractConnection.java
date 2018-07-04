@@ -62,6 +62,7 @@ public abstract class AbstractConnection implements NIOConnection {
 	protected int packetHeaderSize;
 	protected int maxPacketSize;
 	protected volatile ByteBuffer readBuffer;
+	// 待写入buffer
 	protected volatile ByteBuffer writeBuffer;
 	
 	protected final ConcurrentLinkedQueue<ByteBuffer> writeQueue = new ConcurrentLinkedQueue<ByteBuffer>();

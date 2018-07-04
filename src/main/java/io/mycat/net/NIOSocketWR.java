@@ -48,7 +48,7 @@ public class NIOSocketWR extends SocketWR {
      * 2. write0()方法是只要 buffer 中还有，就不停写入；直到写完所有 buffer，或者写入时，返回写入字节为
      * 零，表示网络繁忙，就回临时退出写操作。
      * 3. 没有完全写入并且缓冲队列为空,取消注册写事件
-     * 4. 没有完全写入或者缓冲队列有代写对象,继续注册写时间
+     * 4. 没有完全写入或者缓冲队列有待写对象,继续注册写事件
      * 5. 特别说明，writing.set(false)必须要在 boolean noMoreData = write0()之后和 if (noMoreData &&
      * con.writeQueue.isEmpty())之前，否则会导致当网络流量较低时，消息包缓存在内存中迟迟发不出去的现象。
      */
@@ -86,13 +86,15 @@ public class NIOSocketWR extends SocketWR {
 	private boolean write0() throws IOException {
 
 		int written = 0;
+		// 上一次未写完的数据
 		ByteBuffer buffer = con.writeBuffer;
 		if (buffer != null) {
 		    // position < limit
 			while (buffer.hasRemaining()) {
+			    // 返回写入的字节数
 				written = channel.write(buffer);
-				// record writing status
 				if (written > 0) {
+                    // record writing status
 					con.netOutBytes += written;
 					con.processor.addNetOutBytes(written);
 					con.lastWriteTime = TimeUtil.currentTimeMillis();
@@ -110,14 +112,19 @@ public class NIOSocketWR extends SocketWR {
 				con.recycle(buffer);
 			}
 		}
+
+		// 缓存队列中有待发送的数据
 		while ((buffer = con.writeQueue.poll()) != null) {
+            /**
+             *  没数据可读, 即已发送完
+              */
 			if (buffer.limit() == 0) {
 				con.recycle(buffer);
 				con.close("quit send");
 				return true;
 			}
 
-			// 写模式切换到读模式, limit -> position, posion
+			// 写模式切换到读模式, limit -> position, position -> 0
 			buffer.flip();
 			try {
 				while (buffer.hasRemaining()) {
@@ -136,6 +143,8 @@ public class NIOSocketWR extends SocketWR {
 				con.recycle(buffer);
 				throw e;
 			}
+
+			// 还有数据未发送完
 			if (buffer.hasRemaining()) {
 				con.writeBuffer = buffer;
 				con.writeAttempts++;
